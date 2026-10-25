@@ -1,0 +1,40 @@
+打印助手（SamsungPrinter）使用说明
+====================================
+
+【这是什么】
+一款绕开系统打印队列、直接把文档写入打印机 USB 的多格式打印工具。
+解决"驱动装好了、队列也建了、任务提交成功，但就是不出纸"的问题。
+
+【支持的格式】
+- PDF（.pdf）
+- 图片（.png .jpg .jpeg .bmp .tif .gif .webp）
+- 文本（.txt .md .log .csv，自动分页/换行/识别编码）
+- Office（.doc .docx .xls .xlsx，需电脑装有 Office 或 WPS）
+
+【使用方法】
+1. 双击 SamsungPrinter.exe
+2. 点"＋ 添加文件"，或直接把文件拖进窗口（一次可加多个）
+3. 保持 DPI 150 即可；字小或要更清晰可调 200
+4. 点"开 始 打 印"
+5. 稍候片刻，打印机会自动出纸
+
+【命令行用法】（可选）
+SamsungPrinter.exe -print "C:\文件.pdf" [-dpi 200] [-keep]
+日志在 %TEMP%\samsung-print-cli.log
+
+【注意事项】
+- 打印前确认：打印机已开机、USB 线已连接
+- PDF 打印依赖系统 Python + PyMuPDF（本机已配好）
+- Word/Excel 打印需要 Office 或 WPS；没有时请先把文档另存为 PDF
+- 若提示"无法打开打印机 USB 设备"，确认连接后重试；仍不行见 README 常见问题
+
+【目录文件】
+- SamsungPrinter.exe   打印软件（主程序）
+- SamsungPrinter.cs    源代码（可自行修改/编译）
+- README.md            项目说明（开源文档）
+- LICENSE              开源协议（MIT）
+- 使用说明.txt         本文件
+
+【开源】
+本项目 MIT 协议开源，欢迎分享给遇到同样打印机问题的人。
+源码可自行编译：见 README.md「从源码构建」。
