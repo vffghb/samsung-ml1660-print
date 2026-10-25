@@ -383,8 +383,8 @@ namespace SamsungML1660Print
                     case ".png": case ".jpg": case ".jpeg": case ".bmp": case ".tif": case ".tiff": case ".gif": case ".webp":
                         if (enhance || fix)
                         {
-                            string pr = ProcessImage(file, workDir, enhance, fix);
-                            if (pr == file) log("    图片已就绪（处理失败，使用原图）");
+                            string pr = ProcessImage(file, workDir, enhance, fix, log);
+                            if (pr == file) { pages.Add(file); log("    图片处理失败，已回退使用原图"); }
                             else { pages.Add(pr); log("    图片已处理（调色/修整）"); }
                         }
                         else
@@ -476,7 +476,7 @@ namespace SamsungML1660Print
         }
 
         // ---- 图片 -> 调色/修整（调用 enhance_fix.py）----
-        private static string ProcessImage(string img, string workDir, bool enhance, bool fix)
+        private static string ProcessImage(string img, string workDir, bool enhance, bool fix, Action<string> log)
         {
             string outPath = Path.Combine(workDir, Guid.NewGuid().ToString("N") + ".png");
             string script = Path.Combine(
@@ -493,19 +493,36 @@ namespace SamsungML1660Print
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                StandardOutputEncoding = new System.Text.UTF8Encoding(false),
+                StandardErrorEncoding = new System.Text.UTF8Encoding(false)
             };
             try
             {
                 using (Process p = Process.Start(psi))
                 {
                     string outp = p.StandardOutput.ReadToEnd();
-                    p.StandardError.ReadToEnd();
+                    string err = p.StandardError.ReadToEnd();
                     p.WaitForExit();
-                    if (p.ExitCode == 0 && File.Exists(outPath)) return outPath;
+                    if (p.ExitCode == 0 && File.Exists(outPath))
+                    {
+                        if (!string.IsNullOrEmpty(outp))
+                        {
+                            string t = outp.Trim();
+                            if (t.Length > 200) t = t.Substring(t.Length - 200);
+                            log("    " + t);
+                        }
+                        return outPath;
+                    }
+                    if (!string.IsNullOrEmpty(err))
+                    {
+                        string t = err.Trim();
+                        if (t.Length > 300) t = t.Substring(t.Length - 300);
+                        log("    图像脚本提示: " + t);
+                    }
                 }
             }
-            catch { }
+            catch (Exception ex) { log("    图像处理异常: " + ex.Message); }
             return img;
         }
 

@@ -48,9 +48,11 @@ def fix_perspective(bgr):
     otsu = cv2.morphologyEx(otsu, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
     contours, _ = cv2.findContours(otsu, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
+        print("提示: 未检测到纸张边缘（纸张可能已充满画面），保持原构图")
         return crop_white(orig)
     biggest = max(contours, key=cv2.contourArea)
     if cv2.contourArea(biggest) < orig.shape[0] * orig.shape[1] * 0.2:
+        print("提示: 纸张区域占满画面，无需矫正")
         return crop_white(orig)  # 检测到的区域太小，不强行矫正
     peri = cv2.arcLength(biggest, True)
     approx = cv2.approxPolyDP(biggest, 0.02 * peri, True)
@@ -71,7 +73,9 @@ def fix_perspective(bgr):
             a4 = 1.414
             if abs(w / h - a4) < abs(h / w - a4):
                 warped = cv2.rotate(warped, cv2.ROTATE_90_CLOCKWISE)
+            print("提示: 已检测到纸张并矫正摆正")
             return crop_white(warped)
+    print("提示: 未检测到四边形纸张边缘，保持原构图")
     return crop_white(orig)
 
 
@@ -99,12 +103,12 @@ def main():
             print("提示: 未安装 opencv-python，跳过透视矫正")
             img = ImageOps.autocontrast(img, cutoff=1)
     if do_enhance:
-        # 自动色阶（去掉暗部灰雾）
-        img = ImageOps.autocontrast(img, cutoff=1)
-        # 提亮 + 增强对比度 + 锐化
-        img = ImageEnhance.Brightness(img).enhance(1.12)
-        img = ImageEnhance.Contrast(img).enhance(1.2)
-        img = ImageEnhance.Sharpness(img).enhance(1.3)
+        # 打印专用调色：背景推白、文字压黑（两轮高裁剪自动色阶 + 高对比）
+        img = ImageOps.autocontrast(img, cutoff=8)
+        img = ImageEnhance.Brightness(img).enhance(1.1)
+        img = ImageEnhance.Contrast(img).enhance(1.8)
+        img = ImageEnhance.Sharpness(img).enhance(1.5)
+        img = ImageOps.autocontrast(img, cutoff=5)
     try:
         img.save(dst)
         print("OK")
