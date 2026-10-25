@@ -41,11 +41,13 @@ namespace SamsungML1660Print
             if (args.Length >= 2 && args[0] == "-print")
             {
                 List<string> files = new List<string>();
-                int dpi = 150; bool keep = false;
+                int dpi = 150; bool keep = false, enhance = false, fix = false;
                 for (int i = 1; i < args.Length; i++)
                 {
                     if (args[i] == "-dpi" && i + 1 < args.Length) { int.TryParse(args[i + 1], out dpi); i++; }
                     else if (args[i] == "-keep") keep = true;
+                    else if (args[i] == "-enhance") enhance = true;
+                    else if (args[i] == "-fix") fix = true;
                     else files.Add(args[i]);
                 }
                 string logPath = Path.Combine(Path.GetTempPath(), "samsung-print-cli.log");
@@ -53,7 +55,7 @@ namespace SamsungML1660Print
                 {
                     using (StreamWriter sw = new StreamWriter(logPath, false, new System.Text.UTF8Encoding(true)))
                     {
-                        PrintCore.Print(files.ToArray(), dpi, keep,
+                        PrintCore.Print(files.ToArray(), dpi, keep, enhance, fix,
                             (m) => { sw.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + m); sw.Flush(); });
                     }
                     Environment.Exit(0);
@@ -82,6 +84,7 @@ namespace SamsungML1660Print
         private Label lblStatus;
         private System.Windows.Forms.Timer tmrStatus;
         private int animTick;
+        private CheckBox chkEnhance, chkFix;
 
         public MainForm()
         {
@@ -143,7 +146,10 @@ namespace SamsungML1660Print
             Label lblDpi = new Label { Text = "DPI:", AutoSize = true, Location = new Point(16, 412), ForeColor = Color.FromArgb(71, 85, 105) };
             numDpi = new NumericUpDown { Location = new Point(54, 409), Width = 70, Minimum = 100, Maximum = 300, Value = 150 };
             chkKeep = new CheckBox { Text = "保留临时文件", Location = new Point(142, 412), AutoSize = true, ForeColor = Color.FromArgb(71, 85, 105) };
+            chkEnhance = new CheckBox { Text = "智能调色", Location = new Point(268, 412), AutoSize = true, Checked = true, ForeColor = Color.FromArgb(37, 99, 235), Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold) };
+            chkFix = new CheckBox { Text = "自动修整", Location = new Point(360, 412), AutoSize = true, Checked = true, ForeColor = Color.FromArgb(37, 99, 235), Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Bold) };
             Controls.Add(lblStatus); Controls.Add(lblDpi); Controls.Add(numDpi); Controls.Add(chkKeep);
+            Controls.Add(chkEnhance); Controls.Add(chkFix);
 
             // ---- 日志区 ----
             txtLog = new RichTextBox
@@ -222,6 +228,7 @@ namespace SamsungML1660Print
                 try
                 {
                     PrintCore.Print(files.ToArray(), (int)numDpi.Value, chkKeep.Checked,
+                        chkEnhance.Checked, chkFix.Checked,
                         (m) => Invoke((MethodInvoker)(() => Log(m))));
                     Invoke((MethodInvoker)(() => {
                         tmrStatus.Stop();
@@ -354,7 +361,7 @@ namespace SamsungML1660Print
             }
         }
 
-        public static void Print(string[] files, int dpi, bool keep, Action<string> log)
+        public static void Print(string[] files, int dpi, bool keep, bool enhance, bool fix, Action<string> log)
         {
             if (files == null || files.Length == 0) throw new Exception("没有文件可打印");
             string workDir = Path.Combine(Path.GetTempPath(), "samsung-print");
@@ -374,8 +381,17 @@ namespace SamsungML1660Print
                         log("    PDF → " + n + " 页");
                         break;
                     case ".png": case ".jpg": case ".jpeg": case ".bmp": case ".tif": case ".tiff": case ".gif": case ".webp":
-                        CopyImage(file, workDir, pages);
-                        log("    图片已就绪");
+                        if (enhance || fix)
+                        {
+                            string pr = ProcessImage(file, workDir, enhance, fix);
+                            if (pr == file) log("    图片已就绪（处理失败，使用原图）");
+                            else { pages.Add(pr); log("    图片已处理（调色/修整）"); }
+                        }
+                        else
+                        {
+                            CopyImage(file, workDir, pages);
+                            log("    图片已就绪");
+                        }
                         break;
                     case ".txt": case ".md": case ".log": case ".csv":
                         int tn = RenderTextFile(file, workDir, dpi, pages, log);
@@ -457,6 +473,40 @@ namespace SamsungML1660Print
             string dst = Path.Combine(workDir, Guid.NewGuid().ToString("N") + Path.GetExtension(img).ToLowerInvariant());
             File.Copy(img, dst, true);
             pages.Add(dst);
+        }
+
+        // ---- 图片 -> 调色/修整（调用 enhance_fix.py）----
+        private static string ProcessImage(string img, string workDir, bool enhance, bool fix)
+        {
+            string outPath = Path.Combine(workDir, Guid.NewGuid().ToString("N") + ".png");
+            string script = Path.Combine(
+                Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location),
+                "enhance_fix.py");
+            if (!File.Exists(script))
+                script = Path.Combine(@"D:\SamsungML1660Print", "enhance_fix.py");
+            if (!File.Exists(script))
+                return img;
+            string pyArgs = string.Format("\"{0}\" \"{1}\" \"{2}\" {3} {4}",
+                script, img, outPath, enhance ? "1" : "0", fix ? "1" : "0");
+            ProcessStartInfo psi = new ProcessStartInfo("python", pyArgs)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            try
+            {
+                using (Process p = Process.Start(psi))
+                {
+                    string outp = p.StandardOutput.ReadToEnd();
+                    p.StandardError.ReadToEnd();
+                    p.WaitForExit();
+                    if (p.ExitCode == 0 && File.Exists(outPath)) return outPath;
+                }
+            }
+            catch { }
+            return img;
         }
 
         // ---- 文本 -> 分页位图 ----

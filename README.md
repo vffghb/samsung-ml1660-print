@@ -37,6 +37,8 @@
   - 图片：PNG / JPG / BMP / TIF / GIF / WEBP（自动适配页面）
   - 文本：TXT / MD / LOG / CSV（自动换行、自动分页、自动识别编码 GBK/UTF-8）
   - Office：Word(.doc/.docx) / Excel(.xls/.xlsx)（需本机安装 Microsoft Office 或 WPS，自动调用 COM 转 PDF 后打印）
+- **一键调色**：专为手机拍照的试卷设计——自动色阶去灰雾、提亮、增强对比度、锐化，暗图秒变清晰黑白打印稿
+- **一键修整**：自动检测纸张边缘，透视矫正摆正（拍歪自动拉正）、竖向判断、裁剪桌面背景与白边
 - **USB 设备自动检测**：SetupAPI 枚举打印机 USB 接口，自动识别；检测不到时回退内置路径
 - **界面美观**：现代化渐变 UI、拖拽文件、多文件批量打印、实时日志
 - **命令行模式**：支持脚本化调用（`-print`）
@@ -47,8 +49,9 @@
 
 1. 双击 `SamsungPrinter.exe`
 2. 点击"添加文件"或直接把文件拖进窗口（支持多选）
-3. 按需调整 DPI（默认 150，字密可调 200）
-4. 点"开始打印"，稍候取纸
+3. **打印手机拍照的试卷时，勾选"智能调色"和"自动修整"**（默认已勾选）——自动提亮并矫正摆正
+4. 按需调整 DPI（默认 150，字密可调 200）
+5. 点"开始打印"，稍候取纸
 
 ### 命令行
 
@@ -59,11 +62,19 @@ SamsungPrinter.exe -print "C:\文档.pdf"
 # 打印多个文件，指定清晰度
 SamsungPrinter.exe -print "a.pdf" "b.png" "c.txt" -dpi 200
 
+# 打印手机拍的试卷：调色 + 自动修整
+SamsungPrinter.exe -print "C:\试卷照片.jpg" -enhance -fix
+
+# 只调色不开修整
+SamsungPrinter.exe -print "C:\试卷照片.jpg" -enhance
+
 # 保留中间文件（调试用）
 SamsungPrinter.exe -print "a.pdf" -keep
 ```
 
 命令行日志输出到 `%TEMP%\samsung-print-cli.log`。
+
+> 提示：调色/修整仅对图片生效（PDF 为矢量渲染，无需处理）。需安装 opencv-python：`pip install opencv-python numpy`。
 
 ## 系统要求
 
@@ -72,6 +83,7 @@ SamsungPrinter.exe -print "a.pdf" -keep
 | 操作系统 | Windows 7 SP1 / 10 / 11（x64） |
 | 运行时 | .NET Framework 4.8（Windows 自带） |
 | PDF 渲染 | Python 3 + PyMuPDF（`pip install pymupdf`） |
+| 图片调色/修整 | Python 3 + OpenCV（`pip install opencv-python numpy`） |
 | Office 打印 | 可选：Microsoft Office 或 WPS（仅打印 Word/Excel 时需要） |
 
 ## 从源码构建

@@ -11,6 +11,12 @@
 - 文本（.txt .md .log .csv，自动分页/换行/识别编码）
 - Office（.doc .docx .xls .xlsx，需电脑装有 Office 或 WPS）
 
+【打印手机拍的试卷（重点）】
+手机拍照的试卷通常偏暗、拍歪。勾选这两个功能即可自动修复：
+- 智能调色：自动提亮、增强对比度、去灰雾（暗图变清晰）
+- 自动修整：自动检测纸张、透视矫正摆正、裁剪桌面背景和白边
+（两个选项默认已勾选，对普通图片/PDF 无影响）
+
 【使用方法】
 1. 双击 SamsungPrinter.exe
 2. 点"＋ 添加文件"，或直接把文件拖进窗口（一次可加多个）
@@ -20,17 +26,20 @@
 
 【命令行用法】（可选）
 SamsungPrinter.exe -print "C:\文件.pdf" [-dpi 200] [-keep]
+SamsungPrinter.exe -print "C:\试卷照片.jpg" -enhance -fix   # 调色+修整
 日志在 %TEMP%\samsung-print-cli.log
 
 【注意事项】
 - 打印前确认：打印机已开机、USB 线已连接
 - PDF 打印依赖系统 Python + PyMuPDF（本机已配好）
+- 图片调色/修整依赖 Python + OpenCV（本机已配好）
 - Word/Excel 打印需要 Office 或 WPS；没有时请先把文档另存为 PDF
 - 若提示"无法打开打印机 USB 设备"，确认连接后重试；仍不行见 README 常见问题
 
 【目录文件】
 - SamsungPrinter.exe   打印软件（主程序）
 - SamsungPrinter.cs    源代码（可自行修改/编译）
+- enhance_fix.py       图像调色/修整脚本
 - README.md            项目说明（开源文档）
 - LICENSE              开源协议（MIT）
 - 使用说明.txt         本文件
