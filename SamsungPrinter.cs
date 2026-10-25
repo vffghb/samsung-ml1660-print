@@ -637,11 +637,26 @@ namespace SamsungML1660Print
                 "（请安装 Office 或 WPS 后重试，或先把文档另存为 PDF 再打印）");
         }
 
+        // ---- 自动匹配实际打印机队列名（防止驱动重装后名称变化导致"设置无效"）----
+        private static string ResolvePrinterName()
+        {
+            try
+            {
+                foreach (string name in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+                {
+                    if (name.IndexOf("Samsung ML-1660", StringComparison.OrdinalIgnoreCase) >= 0)
+                        return name;
+                }
+            }
+            catch { }
+            return "Samsung ML-1660 Series";
+        }
+
         // ---- 页面图像 -> PDL（GDI PrintToFile）----
         private static byte[] RenderToPdl(List<string> pages, string prnPath, string docName)
         {
             PrintDocument doc = new PrintDocument();
-            doc.PrinterSettings.PrinterName = "Samsung ML-1660 Series";
+            doc.PrinterSettings.PrinterName = ResolvePrinterName();
             doc.PrinterSettings.PrintToFile = true;
             doc.PrinterSettings.PrintFileName = prnPath;
             doc.DocumentName = docName;
