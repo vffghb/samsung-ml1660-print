@@ -30,12 +30,34 @@
 
 三个环节全部不经过 spooler，因此**与系统打印服务是否损坏无关**。
 
+## v2.1 升级内容
+
+- **新增在线文字打印**：不用准备文件，点"＋ 文字"即可在软件里直接输入要打印的内容
+  - 可选**字体**（自动列出系统已安装字体，常用中文字体排在最前）
+  - 可选**字号**（8–72，可自行输入，最大 200）
+  - 可选**粗体 / 斜体**；编辑区"所见即所得"，A4 自动换行、自动分页
+- **新增应用图标**：程序、窗口、任务栏均显示蓝色"印"字图标
+- 界面增加"＋ 文字"入口，整体版本升级为 v2.1
+
+## v2.0 升级内容
+
+- **修复"Python was not found"报错**：自动定位 Python（PATH → `py` 启动器 → 注册表 → 常见安装目录），
+  并自动识别、跳过微软商店的假 Python 占位符（App Execution Alias）
+- **PDF 渲染重构**：改用临时脚本文件执行，消除命令行转义与中文路径乱码问题；页路径由程序拼接，不再依赖解析 Python 输出
+- **修复子进程输出死锁**：stdout/stderr 改为异步读取 + 超时保护
+- **打印参数修正**：固定 A4 纸张并保留边距，避免内容贴边被打印机裁掉
+- **USB 写入增强**：打开失败自动重试，错误码转为中文可读信息
+- **设备枚举增强**：优先匹配三星设备（VID_04E8），且验证设备可打开
+- **GUI 稳定性**：窗口关闭后后台线程安全退出，不再抛异常
+- **CLI 增加 `-help`**：命令行用法说明
+
 ## 功能特性
 
 - **多格式打印**：
   - PDF（PyMuPDF 渲染，清晰度可调 100–300 DPI）
   - 图片：PNG / JPG / BMP / TIF / GIF / WEBP（自动适配页面）
   - 文本：TXT / MD / LOG / CSV（自动换行、自动分页、自动识别编码 GBK/UTF-8）
+  - 在线文字：软件内直接输入，自由选择字体、字号、粗体/斜体（无需准备文件）
   - Office：Word(.doc/.docx) / Excel(.xls/.xlsx)（需本机安装 Microsoft Office 或 WPS，自动调用 COM 转 PDF 后打印）
 - **一键调色**：专为手机拍照的试卷设计——自动色阶去灰雾、提亮、增强对比度、锐化，暗图秒变清晰黑白打印稿
 - **一键修整**：自动检测纸张边缘，透视矫正摆正（拍歪自动拉正）、竖向判断、裁剪桌面背景与白边
@@ -52,6 +74,15 @@
 3. **打印手机拍照的试卷时，勾选"智能调色"和"自动修整"**（默认已勾选）——自动提亮并矫正摆正
 4. 按需调整 DPI（默认 150，字密可调 200）
 5. 点"开始打印"，稍候取纸
+
+### 直接打印软件里输入的文字
+
+1. 点"＋ 文字"
+2. 在编辑区输入要打印的内容（作业、通知、便条等，支持多行）
+3. 上方选择**字体、字号**，需要时打开**粗体 / 斜体**（编辑区即为排版预览）
+4. 点"加入打印列表"，再点"开始打印"即可
+
+> 文字任务会生成临时的 `.sptxt` 文件（保存了字体、字号、内容），打印完成后随临时目录自动清理。
 
 ### 命令行
 
@@ -84,6 +115,9 @@ SamsungPrinter.exe -print "a.pdf" -keep
 | 运行时 | .NET Framework 4.8（Windows 自带） |
 | PDF 渲染 | Python 3 + PyMuPDF（`pip install pymupdf`） |
 | 图片调色/修整 | Python 3 + OpenCV（`pip install opencv-python numpy`） |
+
+> 软件会自动定位已安装的 Python（系统 PATH / `py` 启动器 / 注册表 / 常见安装目录），
+> 无需手动配置。若本机未安装 Python，打印 PDF 或使用图片调色时会给出中文安装指引。
 | Office 打印 | 可选：Microsoft Office 或 WPS（仅打印 Word/Excel 时需要） |
 
 ## 从源码构建
@@ -92,6 +126,7 @@ SamsungPrinter.exe -print "a.pdf" -keep
 
 ```powershell
 & "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe `
+    /win32icon:app.ico `
     /out:SamsungPrinter.exe `
     /reference:System.Windows.Forms.dll `
     /reference:System.Drawing.dll `
@@ -100,7 +135,18 @@ SamsungPrinter.exe -print "a.pdf" -keep
     SamsungPrinter.cs
 ```
 
+> `app.ico` 是程序图标；可用 `make_icon.py`（需 Pillow：`pip install pillow`）重新生成：
+> `python make_icon.py`
+
 ## 常见问题
+
+**Q: 提示"未找到可用的 Python 3"或 "Python was not found"？**
+A: 软件会按顺序自动查找：系统 PATH 中的 Python → `py` 启动器 → 注册表 → 常见安装目录；
+Windows 应用商店的"假 Python"占位符会被自动识别并跳过。
+若仍找不到，说明本机没有安装真正的 Python 3，请：
+1. 到 https://www.python.org/downloads/ 下载安装（**务必勾选 "Add Python to PATH"**）
+2. 打开命令提示符运行：`pip install pymupdf opencv-python numpy`
+3. 重新打开本软件即可（PDF 打印与图片调色/修整都依赖 Python）
 
 **Q: 提示"无法打开打印机 USB 设备"？**
 A: 确认打印机已开机、USB 线已连接；首次运行会自动检测设备路径，若自动检测失败会使用

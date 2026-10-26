@@ -9,6 +9,7 @@
 - PDF（.pdf）
 - 图片（.png .jpg .jpeg .bmp .tif .gif .webp）
 - 文本（.txt .md .log .csv，自动分页/换行/识别编码）
+- 在线文字（点"＋ 文字"直接输入，可选字体/字号/粗体/斜体）
 - Office（.doc .docx .xls .xlsx，需电脑装有 Office 或 WPS）
 
 【打印手机拍的试卷（重点）】
@@ -20,6 +21,8 @@
 【使用方法】
 1. 双击 SamsungPrinter.exe
 2. 点"＋ 添加文件"，或直接把文件拖进窗口（一次可加多个）
+   也可以点"＋ 文字"，直接在软件里输入要打印的内容：
+   选好字体、字号，可加粗体/斜体，再点"加入打印列表"
 3. 保持 DPI 150 即可；字小或要更清晰可调 200
 4. 点"开 始 打 印"
 5. 稍候片刻，打印机会自动出纸
@@ -31,14 +34,19 @@ SamsungPrinter.exe -print "C:\试卷照片.jpg" -enhance -fix   # 调色+修整
 
 【注意事项】
 - 打印前确认：打印机已开机、USB 线已连接
-- PDF 打印依赖系统 Python + PyMuPDF（本机已配好）
-- 图片调色/修整依赖 Python + OpenCV（本机已配好）
+- PDF 打印需要安装 Python 3 + PyMuPDF（若提示"未找到 Python"，请先安装 Python 3 并勾选
+  "Add Python to PATH"，再运行 pip install pymupdf；详见 README.md 常见问题）
+- 图片"智能调色/自动修整"需要 Python 3 + OpenCV（pip install opencv-python numpy）；
+  未安装 Python 时该两项会自动跳过、使用原图打印
 - Word/Excel 打印需要 Office 或 WPS；没有时请先把文档另存为 PDF
 - 若提示"无法打开打印机 USB 设备"，确认连接后重试；仍不行见 README 常见问题
 
 【目录文件】
-- SamsungPrinter.exe   打印软件（主程序）
+- SamsungPrinter.exe   打印软件（主程序 v2.1，含在线文字、应用图标）
 - SamsungPrinter.cs    源代码（可自行修改/编译）
+- app.ico              应用图标（蓝色"印"字）
+- make_icon.py         图标生成脚本（需 Pillow）
+- SamsungPrinter_v1_backup.exe   旧版备份（如遇问题可还原）
 - enhance_fix.py       图像调色/修整脚本
 - README.md            项目说明（开源文档）
 - LICENSE              开源协议（MIT）
